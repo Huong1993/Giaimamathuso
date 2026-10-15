@@ -1,0 +1,996 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giải Mã Bảo Bối Miễn Dịch - KHTN 8</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #fbfbf6;
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #1e293b;
+    }
+
+    .game-card {
+      background: #ffffff;
+      max-width: 560px;
+      width: 100%;
+      border-radius: 32px;
+      border: 4px solid #fef08a;
+      box-shadow: 0 16px 36px rgba(245, 158, 11, 0.12), 0 4px 12px rgba(0,0,0,0.04);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #confetti-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 10;
+    }
+
+    h1, h2, h3 { font-weight: 900; text-align: center; margin: 0; }
+    .main-title { font-size: 1.65rem; color: #0f172a; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #64748b; font-size: 0.95rem; margin-bottom: 18px; line-height: 1.5; }
+
+    .timer-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fee2e2; color: #dc2626; font-weight: 800;
+      padding: 6px 14px; border-radius: 20px; font-size: 0.9rem;
+    }
+
+    .stage-badge {
+      display: inline-block; background: #e0f2fe; color: #0284c7;
+      font-weight: 800; padding: 5px 12px; border-radius: 12px; font-size: 0.9rem;
+    }
+
+    .content-box {
+      background: #f8fafc; border: 2px solid #e2e8f0;
+      border-radius: 20px; padding: 16px; margin: 14px 0; line-height: 1.7;
+    }
+
+    input[type="text"], select {
+      font-family: 'Nunito', sans-serif; font-weight: 700;
+      border-radius: 12px; border: 2px solid #cbd5e1;
+      padding: 8px 12px; font-size: 0.92rem; outline: none; transition: 0.2s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-3d {
+      font-family: 'Nunito', sans-serif; display: flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%; padding: 13px 18px; border-radius: 18px; font-size: 0.98rem;
+      font-weight: 900; cursor: pointer; border: none; transition: all 0.15s ease;
+      box-shadow: 0 5px 0 rgba(0,0,0,0.15); text-transform: uppercase;
+    }
+    .btn-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.15); }
+    .btn-blue { background: #3b82f6; color: white; box-shadow: 0 5px 0 #1d4ed8; }
+    .btn-green { background: #10b981; color: white; box-shadow: 0 5px 0 #047857; }
+    .btn-orange { background: #f59e0b; color: white; box-shadow: 0 5px 0 #b45309; }
+    .btn-teal { background: #0d9488; color: white; box-shadow: 0 5px 0 #0f766e; }
+
+    .match-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 8px; }
+    .match-row select { max-width: 68%; font-size: 0.82rem; background: white; }
+
+    .video-frame-wrap {
+      background: #000; text-align: center; border-radius: 16px;
+      margin: 10px 0 14px; overflow: hidden; border: 2px solid #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .video-frame-wrap video {
+      width: 100%; height: auto; max-height: 260px; display: block; margin: 0 auto;
+    }
+
+    .order-display { display: flex; gap: 8px; justify-content: center; margin: 12px 0; }
+    .slot-box {
+      width: 44px; height: 44px; border: 2px dashed #94a3b8; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; font-weight: 900;
+      font-size: 1.2rem; background: #fff; color: #3b82f6; cursor: pointer;
+    }
+    .slot-box.filled { border-style: solid; border-color: #3b82f6; background: #eff6ff; }
+    .event-card {
+      background: #fff; border: 2px solid #e2e8f0; border-radius: 12px;
+      padding: 9px 12px; margin-bottom: 8px; cursor: pointer; font-weight: 700; font-size: 0.88rem;
+    }
+    .event-card:hover { border-color: #3b82f6; background: #f8fafc; }
+    .event-card.selected { opacity: 0.35; pointer-events: none; border-color: #cbd5e1; text-decoration: line-through; }
+
+    .blank-drop {
+      display: inline-block; min-width: 90px; height: 30px; line-height: 28px;
+      border: 2px dashed #94a3b8; border-radius: 8px; background: #fff; text-align: center;
+      font-weight: 800; color: #2563eb; vertical-align: middle; cursor: pointer; padding: 0 8px; margin: 0 3px;
+    }
+    .blank-drop.filled { border-style: solid; border-color: #3b82f6; background: #eff6ff; }
+    .word-bank { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .word-item {
+      background: #fff; border: 2px solid #cbd5e1; padding: 5px 12px;
+      border-radius: 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer;
+    }
+    .word-item:hover { background: #f1f5f9; border-color: #94a3b8; }
+    .word-item.used { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+
+    .badge-bar {
+      background: #fefce8; border: 2px dashed #facc15; border-radius: 18px;
+      padding: 14px; margin-top: 16px; text-align: center; font-weight: 900; color: #854d0e;
+    }
+    .letter-chip {
+      display: inline-block; background: #f59e0b; color: white; font-weight: 900;
+      padding: 5px 12px; border-radius: 10px; margin: 3px 5px; font-size: 1.25rem;
+      box-shadow: 0 3px 6px rgba(245, 158, 11, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .msg-feedback { text-align: center; font-weight: 800; margin-top: 10px; font-size: 0.95rem; }
+    .msg-feedback.wrong { color: #ef4444; }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+      display: none; justify-content: center; align-items: center; z-index: 100;
+      padding: 16px;
+    }
+    .modal-content-card {
+      background: #ffffff; max-width: 530px; width: 100%; border-radius: 28px;
+      border: 4px solid #f59e0b; box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+      overflow: hidden; animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-head {
+      background: #0284c7; color: white; padding: 16px 20px; text-align: center; font-size: 1.3rem; font-weight: 900; position: relative;
+    }
+    .btn-close-modal {
+      position: absolute; top: 14px; right: 16px; background: rgba(255,255,255,0.25);
+      border: none; color: white; width: 32px; height: 32px; border-radius: 50%;
+      font-size: 1.1rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    .station-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+    }
+    .station-box {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px; padding: 10px 12px;
+    }
+    .station-label { font-size: 0.8rem; font-weight: 800; color: #64748b; margin-bottom: 2px; }
+    .station-val { font-size: 1.1rem; font-weight: 900; color: #0f172a; }
+    .highlight-green { color: #16a34a; }
+
+    .popup-reward-banner {
+      background: #fffbeb; border: 2.5px dashed #f59e0b; border-radius: 18px;
+      padding: 12px 14px; margin-bottom: 14px; text-align: center;
+    }
+    .popup-reward-title {
+      font-weight: 900; font-size: 0.95rem; color: #b45309; text-transform: uppercase; margin-bottom: 8px;
+    }
+
+    .explain-card {
+      background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 18px;
+      padding: 14px 16px; margin-bottom: 16px; font-size: 0.88rem; color: #065f46; line-height: 1.55; text-align: left;
+    }
+    .explain-title { font-weight: 900; font-size: 0.95rem; margin-bottom: 6px; }
+
+    .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .sheets-notice {
+      background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 16px;
+      padding: 10px 14px; font-size: 0.88rem; color: #166534; font-weight: 800;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 16px; text-align: left;
+    }
+
+    .lb-table { width: 100%; border-collapse: collapse; text-align: center; }
+    .lb-table thead { background: #f8fafc; color: #64748b; font-size: 0.82rem; font-weight: 800; }
+    .lb-table th { padding: 10px 6px; border-bottom: 2px solid #e2e8f0; }
+    .lb-table td { padding: 10px 6px; font-weight: 800; font-size: 0.9rem; border-bottom: 1px solid #f1f5f9; }
+    .lb-table tr:hover { background: #fefce8; }
+    .rank-medal { font-size: 1.25rem; }
+
+    .review-item {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 16px;
+      padding: 12px 14px; margin-bottom: 12px; text-align: left; font-size: 0.88rem; line-height: 1.5;
+    }
+    .review-item-title { font-weight: 900; color: #0369a1; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="game-card">
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- MÀN HÌNH BẮT ĐẦU -->
+  <div id="start-screen">
+    <div style="text-align:center; font-size: 3rem; margin-bottom: 8px;">🔐</div>
+    <h1 class="main-title">GIẢI MÃ BẢO BỐI MIỄN DỊCH</h1>
+    <p class="subtitle">Vượt qua 3 chặng mật thư, chốt vững kiến thức & thu thập 8 mảnh chữ cái để giải mã từ khóa tối thượng!</p>
+    
+    <div class="content-box">
+      <label style="font-weight: 800; display: block; margin-bottom: 8px; color: #334155;">Tên đội thi:</label>
+      <input type="text" id="team-name" placeholder="Ví dụ: Đội 1" style="width: 100%; margin-bottom: 12px;">
+      
+      <label style="font-weight: 800; display: block; margin-bottom: 8px; color: #334155;">Lớp:</label>
+      <input type="text" id="class-name" placeholder="Ví dụ: 8A1" style="width: 100%;">
+    </div>
+
+    <button class="btn-3d btn-blue" onclick="startGame()">BẮT ĐẦU GIẢI MÃ</button>
+  </div>
+
+  <!-- MÀN HÌNH CHƠI -->
+  <div id="game-screen" style="display:none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <span class="stage-badge" id="stage-badge">MẬT THƯ 1 / 3</span>
+      <div class="timer-pill">⏱ <span id="timer-text">0 giây</span></div>
+    </div>
+
+    <div id="stage-title" style="font-size: 1.15rem; font-weight: 900; color: #1e3a8a; margin-bottom: 10px;"></div>
+    <div id="stage-content"></div>
+
+    <button id="btn-submit-stage" class="btn-3d btn-blue" onclick="checkStage()" style="margin-top: 14px;">KIỂM TRA ĐÁP ÁN</button>
+    <div id="feedback" class="msg-feedback"></div>
+
+    <div class="badge-bar">
+      ✨ CÁC MẢNH CHỮ CÁI ĐÃ GOM ĐƯỢC: <br>
+      <div id="collected-badges" style="margin-top: 8px;"><i>Chưa có mảnh nào</i></div>
+    </div>
+  </div>
+
+  <!-- MÀN HÌNH TỔNG KẾT VỀ ĐÍCH -->
+  <div id="finish-screen" style="display:none; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 8px;">🎉</div>
+    <h2 style="font-size: 1.75rem; font-weight: 900; color: #0f172a; margin-bottom: 8px;">HOÀN THÀNH XUẤT SẮC!</h2>
+    <div style="background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 20px; padding: 12px; color: #047857; font-weight: 800; font-size: 0.95rem; margin-bottom: 16px;">
+      🌟 Chúc mừng các em đã nắm rất vững kiến thức và giải mã thành công từ khóa "MIỄN DỊCH"!
+    </div>
+
+    <div class="two-cols">
+      <div class="station-box">
+        <div class="station-label">⭐ Tổng điểm</div>
+        <div class="station-val highlight-green" id="fin-score">30 / 30</div>
+      </div>
+      <div class="station-box">
+        <div class="station-label">⏱ Tổng thời gian</div>
+        <div class="station-val" id="fin-time">0 giây</div>
+      </div>
+    </div>
+
+    <div class="sheets-notice">
+      <span>✅</span>
+      <span>Đã tự động gửi kết quả thi đấu về Google Sheets của Giáo viên!</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <button class="btn-3d btn-orange" onclick="showLeaderboard()">🏆 BẢNG XẾP HẠNG</button>
+      <button class="btn-3d btn-green" onclick="replayCurrentTeam()">🔄 LÀM LẠI (ĐỘI NÀY)</button>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <button class="btn-3d btn-blue" onclick="newTeam()">👥 ĐỘI MỚI TIẾP THEO</button>
+      <button class="btn-3d btn-teal" onclick="showReviewModal()">👁 XEM LẠI BÀI LÀM</button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP HOÀN THÀNH TỪNG TRẠM -->
+<div class="modal-overlay" id="station-popup">
+  <div class="modal-content-card">
+    <div class="modal-head" id="pop-title">🎉 HOÀN THÀNH MẬT THƯ 1!</div>
+    <div style="padding: 20px;">
+      <div class="station-grid">
+        <div class="station-box">
+          <div class="station-label">👥 Tên đội</div>
+          <div class="station-val" id="pop-team">-</div>
+        </div>
+        <div class="station-box">
+          <div class="station-label">🏫 Lớp</div>
+          <div class="station-val" id="pop-class">-</div>
+        </div>
+        <div class="station-box">
+          <div class="station-label">🎖️ Điểm đạt được</div>
+          <div class="station-val highlight-green" id="pop-score">10 / 10</div>
+        </div>
+        <div class="station-box">
+          <div class="station-label">⏱️ Thời gian trạm</div>
+          <div class="station-val" id="pop-time">0s (1 lần)</div>
+        </div>
+      </div>
+
+      <div class="popup-reward-banner">
+        <div class="popup-reward-title">🔑 Mảnh ghép từ khóa bạn nhận được:</div>
+        <div id="pop-new-badges"></div>
+      </div>
+
+      <div class="explain-card">
+        <div class="explain-title">💡 ĐÁP ÁN CHUẨN & LỜI GIẢI THÍCH (GV CHỐT):</div>
+        <div id="pop-explain-content">...</div>
+      </div>
+
+      <button class="btn-3d btn-blue" id="btn-next-step" onclick="goToNextStage()">
+        TIẾP TỤC ĐẾN MẬT THƯ TIẾP THEO ➔
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP BẢNG XẾP HẠNG -->
+<div class="modal-overlay" id="leaderboard-modal">
+  <div class="modal-content-card" style="border-color: #f59e0b;">
+    <div class="modal-head" style="background: #f59e0b;">
+      <button class="btn-close-modal" onclick="hideLeaderboard()">✕</button>
+      <h3>🏆 BẢNG XẾP HẠNG LỚP</h3>
+    </div>
+    <div style="padding: 16px; max-height: 52vh; overflow-y: auto;">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th>Hạng</th>
+            <th>Đội</th>
+            <th>Lớp</th>
+            <th>Điểm</th>
+            <th>Thời gian</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-data">
+          <tr><td colspan="5" style="padding: 16px; color: #94a3b8;">Đang tải kết quả thi đấu...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding: 12px 18px; background: #fffbeb; text-align: right; border-top: 2px solid #fef3c7;">
+      <button onclick="hideLeaderboard()" style="background: #f59e0b; color: white; border: none; font-family: 'Nunito', sans-serif; font-weight: 900; padding: 9px 22px; border-radius: 12px; cursor: pointer;">ĐÓNG</button>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP XEM LẠI BÀI LÀM -->
+<div class="modal-overlay" id="review-modal">
+  <div class="modal-content-card" style="border-color: #0d9488; max-width: 540px;">
+    <div class="modal-head" style="background: #0d9488;">
+      <button class="btn-close-modal" onclick="hideReviewModal()">✕</button>
+      <h3>📋 XEM LẠI TOÀN BỘ BÀI LÀM</h3>
+    </div>
+    <div style="padding: 18px; max-height: 55vh; overflow-y: auto;">
+      
+      <div class="review-item">
+        <div class="review-item-title">Mật thư 1 – Nhận diện kẻ lạ (2 phút)</div>
+        • <b>Câu 1:</b> 1 – B (Miễn dịch) | 2 – C (Kháng nguyên) | 3 – A (Kháng thể).<br>
+        • <b>Câu 2:</b> Kháng thể liên kết <b>đặc hiệu</b> với kháng nguyên tương ứng theo cơ chế <b>chìa khóa – ổ khóa</b>.<br>
+        • <b>Mảnh ghép 1 nhận được:</b> <span class="letter-chip">D</span> <span class="letter-chip">N</span> <span class="letter-chip">I</span>
+      </div>
+
+      <div class="review-item">
+        <div class="review-item-title">Mật thư 2 – Giải mã cơ chế miễn dịch (3 phút)</div>
+        • <b>Câu 3 (Trình tự chuẩn C ➔ B ➔ D ➔ A ➔ E):</b><br>
+        C. Vi sinh vật mang kháng nguyên xâm nhập cơ thể.<br>
+        B. Tế bào lympho B nhận diện kháng nguyên tương ứng và được hoạt hóa.<br>
+        D. Tế bào lympho B được hoạt hóa, tăng sinh và <b>biệt hóa thành tương bào và tế bào lympho B nhớ</b>.<br>
+        A. Tương bào sản xuất kháng thể đặc hiệu.<br>
+        E. Kháng thể liên kết đặc hiệu với kháng nguyên tương ứng, góp phần vô hiệu hóa tác nhân gây bệnh.<br>
+        • <b>Câu 4 (Vai trò tế bào lympho B nhớ):</b> Lưu giữ thông tin kháng nguyên để khi gặp lại cùng loại kháng nguyên, tế bào B nhớ giúp cơ thể tạo đáp ứng miễn dịch <b>nhanh và mạnh hơn</b>.<br>
+        • <b>Mảnh ghép 2 nhận được:</b> <span class="letter-chip">H</span> <span class="letter-chip">E</span> <span class="letter-chip">M</span>
+      </div>
+
+      <div class="review-item">
+        <div class="review-item-title">Mật thư 3 – Lá chắn Vaccine (2 phút)</div>
+        • <b>Câu 5:</b> Chế phẩm chứa mầm bệnh đã được làm (1) <b>suy yếu</b> hoặc (2) <b>bất hoạt</b>, hay chứa (3) <b>kháng nguyên</b> của mầm bệnh.<br>
+        • <b>Câu 6:</b> Tiêm vaccine ➔ tạo <b>miễn dịch</b> ➔ góp phần <b>phòng</b> bệnh.<br>
+        • <b>Mảnh ghép 3 nhận được:</b> <span class="letter-chip">C</span> <span class="letter-chip">I</span><br>
+        • <b>Từ khóa tối thượng giải mã:</b> <b style="color:#0284c7; font-size:1.05rem;">MIỄN DỊCH</b>
+      </div>
+
+    </div>
+    <div style="padding: 12px 18px; background: #f0fdfa; text-align: right; border-top: 2px solid #ccfbf1;">
+      <button onclick="hideReviewModal()" style="background: #0d9488; color: white; border: none; font-family: 'Nunito', sans-serif; font-weight: 900; padding: 9px 22px; border-radius: 12px; cursor: pointer;">ĐÓNG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = "URL_APPS_SCRIPT_CUA_BAN";
+
+  let currentStage = 1;
+  let teamName = "";
+  let className = "";
+  let score = 0;
+  let timerInterval;
+  let totalSeconds = 0;
+  let stageSeconds = 0;
+  let triesInStage = 0;
+  let totalWrong = 0;
+  let collectedLetters = [];
+  let stage3PassedVaccine = false;
+
+  const EVENTS = [
+    { key: "A", text: "A. Tương bào sản xuất kháng thể đặc hiệu." },
+    { key: "B", text: "B. Tế bào lympho B nhận diện kháng nguyên tương ứng và được hoạt hóa." },
+    { key: "C", text: "C. Vi sinh vật mang kháng nguyên xâm nhập cơ thể." },
+    { key: "D", text: "D. Tế bào lympho B được hoạt hóa, tăng sinh và biệt hóa thành tương bào và tế bào lympho B nhớ." },
+    { key: "E", text: "E. Kháng thể liên kết đặc hiệu với kháng nguyên tương ứng, góp phần vô hiệu hóa tác nhân gây bệnh." }
+  ];
+  let selectedOrder = [];
+
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playCorrectSound() {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.08);
+      gain.gain.setValueAtTime(0.15, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.3);
+    });
+  }
+  function playWrongSound() {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.linearRampToValueAtTime(100, now + 0.25);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  function startGame() {
+    teamName = document.getElementById("team-name").value.trim();
+    className = document.getElementById("class-name").value.trim();
+    if (!teamName || !className) return alert("Vui lòng điền đủ Tên đội và Lớp!");
+
+    getAudioContext();
+    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("game-screen").style.display = "block";
+
+    initGameRun();
+  }
+
+  function initGameRun() {
+    currentStage = 1;
+    score = 0;
+    totalSeconds = 0;
+    stageSeconds = 0;
+    triesInStage = 0;
+    totalWrong = 0;
+    collectedLetters = [];
+    stage3PassedVaccine = false;
+    document.getElementById("collected-badges").innerHTML = "<i>Chưa có mảnh nào</i>";
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      totalSeconds++;
+      stageSeconds++;
+      document.getElementById("timer-text").innerText = `${totalSeconds} giây`;
+    }, 1000);
+
+    renderStage();
+  }
+
+  function renderStage() {
+    const badgeEl = document.getElementById("stage-badge");
+    const titleEl = document.getElementById("stage-title");
+    const contentEl = document.getElementById("stage-content");
+    const btnSubmit = document.getElementById("btn-submit-stage");
+    document.getElementById("feedback").innerText = "";
+
+    badgeEl.innerText = `MẬT THƯ ${currentStage} / 3`;
+
+    // ========== MẬT THƯ 1: HÌNH ẢNH TRỰC QUAN KHÁNG THỂ - KHÁNG NGUYÊN ==========
+    if (currentStage === 1) {
+      btnSubmit.innerText = "KIỂM TRA ĐÁP ÁN";
+      titleEl.innerText = "Mật thư 1 – Nhận diện kẻ lạ (2 phút)";
+      contentEl.innerHTML = `
+        <div class="content-box">
+          <b>Câu 1. Ghép đúng danh tính:</b> Nối thuật ngữ với mô tả phù hợp.<br><br>
+          <div class="match-row">
+            <span>1. Miễn dịch:</span>
+            <select id="m1">
+              <option value="">-- Chọn mô tả --</option>
+              <option value="A">A. Protein do cơ thể tạo ra để chống lại kháng nguyên tương ứng.</option>
+              <option value="B">B. Khả năng cơ thể không mắc một bệnh truyền nhiễm nào đó.</option>
+              <option value="C">C. Chất khi xâm nhập cơ thể có khả năng kích thích tạo kháng thể tương ứng.</option>
+              <option value="D">D. Tế bào có khả năng tiêu diệt mọi tác nhân gây bệnh.</option>
+            </select>
+          </div>
+          <div class="match-row">
+            <span>2. Kháng nguyên:</span>
+            <select id="m2">
+              <option value="">-- Chọn mô tả --</option>
+              <option value="A">A. Protein do cơ thể tạo ra để chống lại kháng nguyên tương ứng.</option>
+              <option value="B">B. Khả năng cơ thể không mắc một bệnh truyền nhiễm nào đó.</option>
+              <option value="C">C. Chất khi xâm nhập cơ thể có khả năng kích thích tạo kháng thể tương ứng.</option>
+              <option value="D">D. Tế bào có khả năng tiêu diệt mọi tác nhân gây bệnh.</option>
+            </select>
+          </div>
+          <div class="match-row">
+            <span>3. Kháng thể:</span>
+            <select id="m3">
+              <option value="">-- Chọn mô tả --</option>
+              <option value="A">A. Protein do cơ thể tạo ra để chống lại kháng nguyên tương ứng.</option>
+              <option value="B">B. Khả năng cơ thể không mắc một bệnh truyền nhiễm nào đó.</option>
+              <option value="C">C. Chất khi xâm nhập cơ thể có khả năng kích thích tạo kháng thể tương ứng.</option>
+              <option value="D">D. Tế bào có khả năng tiêu diệt mọi tác nhân gây bệnh.</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="content-box">
+          <b>Câu 2. Giải mã quy luật:</b> Quan sát hình minh họa kháng nguyên – kháng thể và hoàn thành nhận định:<br>
+          
+          <div style="text-align: center; margin: 12px 0;">
+            <svg viewBox="0 0 460 160" style="max-width: 100%; height: auto; background: #ffffff; border-radius: 16px; border: 2px solid #e2e8f0; padding: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+              <g transform="translate(15, 10)">
+                <path d="M 30,80 L 65,80 L 90,45 L 102,54 L 80,85 L 102,116 L 90,125 L 65,90 L 30,90 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+                <polygon points="102,54 116,48 112,62" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
+                <circle cx="150" cy="85" r="32" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+                <polygon points="118,85 128,75 128,95" fill="#ffffff" stroke="#b91c1c" stroke-width="2"/>
+                <text x="50" y="22" font-family="'Nunito', sans-serif" font-weight="900" font-size="11" fill="#1d4ed8" text-anchor="middle">Kháng thể A</text>
+                <text x="150" y="22" font-family="'Nunito', sans-serif" font-weight="900" font-size="11" fill="#b91c1c" text-anchor="middle">Kháng nguyên A</text>
+                <text x="100" y="145" font-family="'Nunito', sans-serif" font-weight="800" font-size="11" fill="#16a34a" text-anchor="middle">Khớp đặc hiệu (khóa - chìa)</text>
+              </g>
+
+              <g transform="translate(245, 10)">
+                <path d="M 30,80 L 65,80 L 90,45 L 102,54 L 80,85 L 102,116 L 90,125 L 65,90 L 30,90 Z" fill="#0d9488" stroke="#0f766e" stroke-width="2"/>
+                <circle cx="102" cy="54" r="6" fill="#0d9488" stroke="#0f766e" stroke-width="2"/>
+                <circle cx="165" cy="85" r="32" fill="#ef4444" stroke="#b91c1c" stroke-width="2"/>
+                <polygon points="133,85 143,75 143,95" fill="#ffffff" stroke="#b91c1c" stroke-width="2"/>
+                <text x="50" y="22" font-family="'Nunito', sans-serif" font-weight="900" font-size="11" fill="#0f766e" text-anchor="middle">Kháng thể B</text>
+                <text x="165" y="22" font-family="'Nunito', sans-serif" font-weight="900" font-size="11" fill="#b91c1c" text-anchor="middle">Kháng nguyên A</text>
+                <text x="110" y="145" font-family="'Nunito', sans-serif" font-weight="800" font-size="11" fill="#dc2626" text-anchor="middle">Không khớp hình học</text>
+              </g>
+            </svg>
+          </div>
+
+          <i>“Kháng thể liên kết 
+          <input type="text" id="m1-word1" placeholder="tính chất..." style="width: 125px; display:inline-block; margin: 2px 4px;"> 
+          với kháng nguyên tương ứng theo cơ chế 
+          <input type="text" id="m1-word2" placeholder="tên cơ chế..." style="width: 175px; display:inline-block; margin: 2px 4px;">.”</i>
+        </div>
+      `;
+    } 
+    // ========== MẬT THƯ 2: VIDEO CO_CHE_MIEN_DICH ==========
+    else if (currentStage === 2) {
+      btnSubmit.innerText = "KIỂM TRA ĐÁP ÁN";
+      selectedOrder = [];
+      titleEl.innerText = "Mật thư 2 – Giải mã cơ chế miễn dịch (3 phút)";
+      contentEl.innerHTML = `
+        <div class="content-box">
+          <b>🎬 Quan sát Video & Sơ đồ cơ chế miễn dịch:</b>
+          <div class="video-frame-wrap">
+            <video controls playsinline>
+              <source src="video_vaccine.mp4" type="video/mp4">
+              Trình duyệt của bạn không hỗ trợ phát video này.
+            </video>
+          </div>
+
+          <b>Câu 3. Chạm chọn sắp xếp các sự kiện theo đúng trình tự (1 đến 5):</b>
+          <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">(Chạm vào ô số phía trên nếu muốn chọn lại)</div>
+          
+          <div class="order-display">
+            ${[0,1,2,3,4].map(i => `<div class="slot-box" id="slot-${i}" onclick="removeSlot(${i})">${i+1}</div>`).join("")}
+          </div>
+
+          <div id="cards-container">
+            ${EVENTS.map(item => `
+              <div class="event-card" id="card-${item.key}" onclick="chooseCard('${item.key}')">
+                ${item.text}
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="content-box">
+          <b>Câu 4. Vai trò của tế bào lympho B nhớ:</b><br>
+          Quan sát sơ đồ và video, khi cơ thể gặp lại cùng một kháng nguyên, tế bào lympho B nhớ có vai trò gì?
+          <select id="m2-q4" style="width: 100%; margin-top: 6px;">
+            <option value="">-- Chọn vai trò chuẩn xác --</option>
+            <option value="dung">Lưu giữ thông tin kháng nguyên, giúp đáp ứng miễn dịch nhanh và mạnh hơn</option>
+            <option value="sai1">Trực tiếp thực bào và tiêu hóa mầm bệnh</option>
+            <option value="sai2">Làm giảm phản ứng miễn dịch để không bị sốt</option>
+          </select>
+        </div>
+      `;
+    } 
+    // ========== MẬT THƯ 3: VIDEO VACCINE ==========
+    else if (currentStage === 3) {
+      titleEl.innerText = "Mật thư 3 – Lá chắn Vaccine (2 phút)";
+      if (!stage3PassedVaccine) {
+        btnSubmit.innerText = "KIỂM TRA ĐÁP ÁN";
+        contentEl.innerHTML = `
+          <div class="content-box">
+ 
+            <b>Câu 5. Hoàn thành khái niệm Vaccine:</b><br>
+            <i>(Chạm từ trong kho từ bên dưới để điền, chạm ô trống để gỡ bỏ)</i><br><br>
+            “Vaccine là chế phẩm sinh học có thể chứa mầm bệnh đã được làm (1) <span class="blank-drop" id="b1" onclick="clearBlank('b1')">...</span> 
+            hoặc (2) <span class="blank-drop" id="b2" onclick="clearBlank('b2')">...</span>, 
+            hay chứa (3) <span class="blank-drop" id="b3" onclick="clearBlank('b3')">...</span> của mầm bệnh, nhằm kích thích cơ thể tạo miễn dịch.”
+
+            <div class="word-bank">
+              <span class="word-item" onclick="fillWord(this, 'suy yếu')">suy yếu</span>
+              <span class="word-item" onclick="fillWord(this, 'bất hoạt')">bất hoạt</span>
+              <span class="word-item" onclick="fillWord(this, 'kháng nguyên')">kháng nguyên</span>
+              <span class="word-item" onclick="fillWord(this, 'kháng thể')">kháng thể</span>
+              <span class="word-item" onclick="fillWord(this, 'chữa bệnh')">chữa bệnh</span>
+            </div>
+          </div>
+
+          <div class="content-box">
+            <b>Câu 6. Hoàn thành thông điệp:</b><br>
+            <i>Tiêm vaccine ➔ tạo 
+            <select id="m3-msg1" style="display:inline-block; margin: 0 4px;">
+              <option value="">-- chọn --</option>
+              <option value="miễn dịch">miễn dịch</option>
+              <option value="chữa bệnh">chữa bệnh</option>
+              <option value="kháng nguyên">kháng nguyên</option>
+            </select>
+            ➔ góp phần 
+            <select id="m3-msg2" style="display:inline-block; margin: 0 4px;">
+              <option value="">-- chọn --</option>
+              <option value="phòng">phòng</option>
+              <option value="chữa">chữa</option>
+            </select>
+            bệnh.</i>
+          </div>
+        `;
+      } else {
+        btnSubmit.innerText = "GIẢI MÃ TỪ KHÓA TỐI THƯỢNG";
+        contentEl.innerHTML = `
+          <div class="content-box" style="border-color: #f59e0b; background: #fffbeb;">
+            <div style="font-size: 1.05rem; font-weight: 900; color: #b45309; margin-bottom: 6px;">
+              🎉 ĐÃ GOM ĐỦ 8 MẢNH CHỮ CÁI BÍ MẬT!
+            </div>
+            Quan sát khay mảnh chữ cái màu vàng bên dưới và ghép thành <b>TỪ KHÓA TỐI THƯỢNG (gồm 2 từ)</b> để về đích:
+            <input type="text" id="final-code" placeholder="Nhập từ khóa 2 từ tại đây..." style="width: 100%; margin-top: 10px; text-align: center;">
+          </div>
+        `;
+      }
+    }
+  }
+
+  function chooseCard(key) {
+    if (selectedOrder.length >= 5 || selectedOrder.includes(key)) return;
+    selectedOrder.push(key);
+    updateOrderDisplay();
+  }
+  function removeSlot(index) {
+    if (index < selectedOrder.length) {
+      selectedOrder.splice(index, 1);
+      updateOrderDisplay();
+    }
+  }
+  function updateOrderDisplay() {
+    for (let i = 0; i < 5; i++) {
+      const slot = document.getElementById(`slot-${i}`);
+      if (i < selectedOrder.length) {
+        slot.innerText = selectedOrder[i];
+        slot.classList.add("filled");
+      } else {
+        slot.innerText = (i + 1);
+        slot.classList.remove("filled");
+      }
+    }
+    EVENTS.forEach(ev => {
+      const card = document.getElementById(`card-${ev.key}`);
+      if (selectedOrder.includes(ev.key)) card.classList.add("selected");
+      else card.classList.remove("selected");
+    });
+  }
+
+  function fillWord(el, word) {
+    if (el.classList.contains("used")) return;
+    const blanks = ["b1", "b2", "b3"];
+    for (let id of blanks) {
+      const b = document.getElementById(id);
+      if (b.innerText === "...") {
+        b.innerText = word;
+        b.classList.add("filled");
+        el.classList.add("used");
+        break;
+      }
+    }
+  }
+  function clearBlank(blankId) {
+    const b = document.getElementById(blankId);
+    if (b.innerText !== "...") {
+      const word = b.innerText;
+      b.innerText = "...";
+      b.classList.remove("filled");
+      document.querySelectorAll(".word-item").forEach(w => {
+        if (w.innerText === word && w.classList.contains("used")) w.classList.remove("used");
+      });
+    }
+  }
+
+  function checkStage() {
+    triesInStage++;
+    const feedback = document.getElementById("feedback");
+
+    // KIỂM TRA MẬT THƯ 1
+    if (currentStage === 1) {
+      const m1 = document.getElementById("m1").value;
+      const m2 = document.getElementById("m2").value;
+      const m3 = document.getElementById("m3").value;
+      const w1 = document.getElementById("m1-word1").value.trim().toLowerCase();
+      const w2 = document.getElementById("m1-word2").value.trim().toLowerCase().replace(/-/g, ' ');
+
+      const isMatchOk = (m1 === "B" && m2 === "C" && m3 === "A");
+      const isW1Ok = (w1.includes("đặc hiệu") || w1.includes("dac hieu"));
+      const isW2Ok = (w2.includes("chìa khóa ổ khóa") || w2.includes("chìa khoá ổ khoá") || w2.includes("chia khoa o khoa"));
+
+      if (isMatchOk && isW1Ok && isW2Ok) {
+        playCorrectSound();
+        showStationPopup(1, ["D", "N", "I"], `
+          • <b>Câu 1:</b> 1 – B, 2 – C, 3 – A.<br>
+          • <b>Câu 2:</b> “đặc hiệu”; “chìa khóa – ổ khóa”.<br>
+          • <b>GV chốt:</b> Kháng thể liên kết đặc hiệu với kháng nguyên tương ứng theo cơ chế chìa khóa - ổ khóa.
+        `);
+      } else {
+        totalWrong++;
+        playWrongSound();
+        feedback.className = "msg-feedback wrong";
+        feedback.innerText = "Chưa chính xác! Hãy kiểm tra lại phần nối thuật ngữ hoặc từ khóa quy luật.";
+      }
+    }
+    // KIỂM TRA MẬT THƯ 2
+    else if (currentStage === 2) {
+      if (selectedOrder.length < 5) {
+        feedback.className = "msg-feedback wrong";
+        feedback.innerText = "Hãy chọn đủ 5 sự kiện theo thứ tự từ 1 đến 5!";
+        return;
+      }
+
+      const q4Ans = document.getElementById("m2-q4").value;
+      const isOrderOk = (selectedOrder.join("") === "CBDAE");
+      const isQ4Ok = (q4Ans === "dung");
+
+      if (isOrderOk && isQ4Ok) {
+        playCorrectSound();
+        showStationPopup(2, ["H", "E", "M"], `
+          • <b>Câu 3 (Trình tự chuẩn):</b> C ➔ B ➔ D ➔ A ➔ E.<br>
+          • <b>Câu 4 (Tế bào lympho B nhớ):</b> Tế bào lympho B nhớ lưu giữ thông tin kháng nguyên, giúp cơ thể đáp ứng miễn dịch nhanh và mạnh hơn khi gặp lại cùng kháng nguyên.<br>
+          • <b>GV chốt:</b> Quá trình biệt hóa tạo cả tương bào (tiết kháng thể) và tế bào nhớ. Nhờ có tế bào nhớ, cơ thể mới có khả năng ghi nhớ miễn dịch lâu dài.
+        `);
+      } else {
+        totalWrong++;
+        playWrongSound();
+        feedback.className = "msg-feedback wrong";
+        feedback.innerText = "Trình tự sự kiện hoặc vai trò tế bào nhớ chưa đúng! Hãy quan sát kỹ lại sơ đồ.";
+      }
+    }
+    // KIỂM TRA MẬT THƯ 3
+    else if (currentStage === 3) {
+      if (!stage3PassedVaccine) {
+        const b1 = document.getElementById("b1").innerText;
+        const b2 = document.getElementById("b2").innerText;
+        const b3 = document.getElementById("b3").innerText;
+        const msg1 = document.getElementById("m3-msg1").value;
+        const msg2 = document.getElementById("m3-msg2").value;
+
+        const isB1B2Ok = ((b1 === "suy yếu" && b2 === "bất hoạt") || (b1 === "bất hoạt" && b2 === "suy yếu"));
+        const isB3Ok = (b3 === "kháng nguyên");
+        const isMsgOk = (msg1 === "miễn dịch" && msg2 === "phòng");
+
+        if (isB1B2Ok && isB3Ok && isMsgOk) {
+          playCorrectSound();
+          stage3PassedVaccine = true;
+          showStationPopup(3, ["C", "I"], `
+            • <b>Câu 5:</b> suy yếu – bất hoạt – kháng nguyên.<br>
+            • <b>Câu 6:</b> miễn dịch – phòng.<br>
+            • <b>GV chốt:</b> Tiêm vaccine giúp kích thích cơ thể sản xuất kháng thể và tế bào lympho B nhớ để phòng bệnh chủ động.
+          `);
+        } else {
+          totalWrong++;
+          playWrongSound();
+          feedback.className = "msg-feedback wrong";
+          feedback.innerText = "Các từ điền vào khái niệm vaccine hoặc thông điệp chưa chuẩn xác!";
+        }
+      } else {
+        const code = document.getElementById("final-code").value.trim().toUpperCase();
+        if (code === "MIỄN DỊCH" || code === "MIEN DICH") {
+          finishGame();
+        } else {
+          totalWrong++;
+          playWrongSound();
+          feedback.className = "msg-feedback wrong";
+          feedback.innerText = "Từ khóa chưa chính xác! Gợi ý: Gồm 2 từ, chính là chủ đề bài học hôm nay.";
+        }
+      }
+    }
+  }
+
+  function showStationPopup(stageNum, newLetters, explainHtml) {
+    score += 10;
+    collectedLetters = collectedLetters.concat(newLetters);
+    
+    document.getElementById("collected-badges").innerHTML = collectedLetters.map(l => `<span class="letter-chip">${l}</span>`).join(" ");
+
+    document.getElementById("pop-title").innerText = `🎉 HOÀN THÀNH MẬT THƯ ${stageNum}!`;
+    document.getElementById("pop-team").innerText = teamName;
+    document.getElementById("pop-class").innerText = className;
+    document.getElementById("pop-score").innerText = `${score} / 30`;
+    document.getElementById("pop-time").innerText = `${stageSeconds}s (${triesInStage} lần)`;
+    document.getElementById("pop-explain-content").innerHTML = explainHtml;
+
+    document.getElementById("pop-new-badges").innerHTML = newLetters.map(l => `<span class="letter-chip">${l}</span>`).join(" ");
+
+    if (stageNum === 3) {
+      document.getElementById("btn-next-step").innerText = "TIẾP TỤC GIẢI MÃ TỪ KHÓA TỐI THƯỢNG ➔";
+    } else {
+      document.getElementById("btn-next-step").innerText = `TIẾP TỤC ĐẾN MẬT THƯ ${stageNum + 1} ➔`;
+    }
+
+    document.getElementById("station-popup").style.display = "flex";
+  }
+
+  function goToNextStage() {
+    document.getElementById("station-popup").style.display = "none";
+    stageSeconds = 0;
+    triesInStage = 0;
+    if (currentStage < 3) currentStage++;
+    renderStage();
+  }
+
+  function finishGame() {
+    clearInterval(timerInterval);
+    document.getElementById("game-screen").style.display = "none";
+    document.getElementById("finish-screen").style.display = "block";
+    document.getElementById("fin-score").innerText = `${score} / 30`;
+    document.getElementById("fin-time").innerText = `${totalSeconds} giây`;
+    startConfetti();
+
+    if (SCRIPT_URL && SCRIPT_URL !== "URL_APPS_SCRIPT_CUA_BAN") {
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          team: teamName, 
+          class: className,
+          score: score, 
+          timeSpent: totalSeconds,
+          wrongTries: totalWrong
+        })
+      });
+    }
+  }
+
+  function replayCurrentTeam() {
+    document.getElementById("finish-screen").style.display = "none";
+    document.getElementById("game-screen").style.display = "block";
+    initGameRun();
+  }
+  function newTeam() {
+    location.reload();
+  }
+  function showReviewModal() {
+    document.getElementById("review-modal").style.display = "flex";
+  }
+  function hideReviewModal() {
+    document.getElementById("review-modal").style.display = "none";
+  }
+
+  function formatTime(sec) {
+    let m = Math.floor(sec / 60);
+    let s = sec % 60;
+    return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+  }
+
+  function showLeaderboard() {
+    document.getElementById("leaderboard-modal").style.display = "flex";
+    loadLeaderboardData();
+  }
+  function hideLeaderboard() {
+    document.getElementById("leaderboard-modal").style.display = "none";
+  }
+
+  function loadLeaderboardData() {
+    const tbody = document.getElementById("leaderboard-data");
+    tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; color: #94a3b8;">Đang tải kết quả thi đấu...</td></tr>`;
+
+    if (!SCRIPT_URL || SCRIPT_URL === "URL_APPS_SCRIPT_CUA_BAN") {
+      tbody.innerHTML = `
+        <tr>
+          <td><span class="rank-medal">🥇</span></td>
+          <td>${teamName || "Đội 1"}</td>
+          <td>${className || "8A1"}</td>
+          <td style="color:#16a34a;">${score}</td>
+          <td>${formatTime(totalSeconds)}</td>
+        </tr>
+      `;
+      return;
+    }
+
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(data => {
+        if (!data || data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px;">Chưa có dữ liệu thi đấu!</td></tr>`;
+          return;
+        }
+        const medals = ["🥇", "🥈", "🥉"];
+        tbody.innerHTML = data.map((item, idx) => {
+          let rankDisplay = idx < 3 ? `<span class="rank-medal">${medals[idx]}</span>` : (idx + 1);
+          return `
+            <tr>
+              <td>${rankDisplay}</td>
+              <td style="color:#0284c7;">${item.team}</td>
+              <td>${item.class || "-"}</td>
+              <td style="color:#16a34a;">${item.score}</td>
+              <td>${formatTime(item.timeSpent)}</td>
+            </tr>
+          `;
+        }).join("");
+      })
+      .catch(() => {
+        tbody.innerHTML = `
+          <tr>
+            <td><span class="rank-medal">🥇</span></td>
+            <td>${teamName || "Đội 1"}</td>
+            <td>${className || "8A1"}</td>
+            <td style="color:#16a34a;">${score}</td>
+            <td>${formatTime(totalSeconds)}</td>
+          </tr>
+        `;
+      });
+  }
+
+  function startConfetti() {
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    const pieces = [];
+    const colors = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6", "#ec4899"];
+    for (let i = 0; i < 70; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * -canvas.height,
+        size: Math.random() * 8 + 5,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        velY: Math.random() * 3 + 2,
+        velX: (Math.random() - 0.5) * 2,
+        angle: Math.random() * 360,
+        spin: (Math.random() - 0.5) * 8
+      });
+    }
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.y += p.velY; p.x += p.velX;
+        p.angle += p.spin;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.angle * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      });
+      requestAnimationFrame(render);
+    }
+    render();
+  }
+</script>
+</body>
+</html>
